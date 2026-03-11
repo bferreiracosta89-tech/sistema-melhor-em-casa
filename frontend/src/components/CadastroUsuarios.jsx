@@ -21,7 +21,7 @@ export default function CadastroUsuarios() {
   const buscarUsuarios = async () => {
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('http://localhost:8000/api/usuarios', {
+      const resposta = await fetch('https://api-melhor-em-casa.onrender.com/api/usuarios', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resposta.ok) {
@@ -46,7 +46,7 @@ export default function CadastroUsuarios() {
 
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('http://localhost:8000/api/usuarios/cadastrar', {
+      const resposta = await fetch('https://api-melhor-em-casa.onrender.com/api/usuarios/cadastrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nome, email, senha, perfil }) // Enviando o perfil
@@ -72,7 +72,7 @@ export default function CadastroUsuarios() {
     if (!window.confirm(`Tem certeza que deseja remover o acesso de ${emailUsuario}?`)) return;
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch(`http://localhost:8000/api/usuarios/${id}`, {
+      const resposta = await fetch(`https://api-melhor-em-casa.onrender.com/api/usuarios/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -87,7 +87,7 @@ export default function CadastroUsuarios() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch(`http://localhost:8000/api/usuarios/${modalEdicao.id}`, {
+      const resposta = await fetch(`https://api-melhor-em-casa.onrender.com/api/usuarios/${modalEdicao.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nome: modalEdicao.nome, email: modalEdicao.email, perfil: modalEdicao.perfil })
@@ -110,7 +110,7 @@ export default function CadastroUsuarios() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch(`http://localhost:8000/api/usuarios/${modalReset.id}/reset-senha`, {
+      const resposta = await fetch(`https://api-melhor-em-casa.onrender.com/api/usuarios/${modalReset.id}/reset-senha`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nova_senha: modalReset.novaSenha })
