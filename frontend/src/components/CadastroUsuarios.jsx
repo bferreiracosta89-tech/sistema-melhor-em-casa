@@ -21,7 +21,7 @@ export default function CadastroUsuarios() {
   const buscarUsuarios = async () => {
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/usuarios', {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (resposta.ok) {
@@ -46,7 +46,7 @@ export default function CadastroUsuarios() {
 
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/usuarios/cadastrar', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/cadastrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nome, email, senha, perfil }) // Enviando o perfil

@@ -18,7 +18,7 @@ export default function DashboardUnificado() {
     const buscarDados = async () => {
       try {
         const token = localStorage.getItem('token_melhor_em_casa');
-        const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/indicadores', {
+        const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 

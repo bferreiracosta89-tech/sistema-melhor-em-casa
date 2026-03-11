@@ -18,7 +18,7 @@ export default function UploadPlanilha() {
       const token = localStorage.getItem('token_melhor_em_casa');
 
       // 2. Faz o fetch enviando o arquivo E o token de segurança
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/upload/planilha', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload/planilha`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

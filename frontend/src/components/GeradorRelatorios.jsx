@@ -62,7 +62,7 @@ export default function GeradorRelatorios() {
     try {
       const token = localStorage.getItem('token_melhor_em_casa'); // Pega o token
 
-      const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/relatorios/chat', {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/relatorios/chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

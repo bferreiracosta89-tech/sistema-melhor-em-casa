@@ -492,8 +492,8 @@ def chat_relatorio(dados: MensagemChat, usuario_logado: str = Depends(obter_usua
         model = genai.GenerativeModel('gemini-flash-latest') 
         response = model.generate_content(prompt)
 
-        # Limpa a resposta caso a IA coloque blocos de código (```json) em volta
-        texto_limpo = response.text.replace("```json", "").replace("```", "").strip()
+        # Limpa a resposta caso a IA coloque blocos de código (``json) em volta
+        texto_limpo = response.text.replace("``json", "").replace("``", "").strip()
 
         # Transforma o texto da IA em um dicionário Python
         resultado_json = json.loads(texto_limpo)

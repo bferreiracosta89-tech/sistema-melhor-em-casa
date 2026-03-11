@@ -13,7 +13,7 @@ export default function TabelaDados() {
   const buscarDados = async () => {
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/indicadores', {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -111,7 +111,7 @@ export default function TabelaDados() {
     setExportando(true);
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('${import.meta.env.VITE_API_URL}/api/indicadores/exportar', {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores/exportar`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
