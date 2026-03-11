@@ -18,7 +18,7 @@ export default function UploadPlanilha() {
       const token = localStorage.getItem('token_melhor_em_casa');
 
       // 2. Faz o fetch enviando o arquivo E o token de segurança
-      const response = await fetch('https://api-melhor-em-casa.onrender.com/api/upload/planilha', {
+      const response = await fetch('http://localhost:8000/api/upload/planilha', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -10,7 +10,7 @@ export default function Login({ onLoginSucesso }) {
     setErro('');
 
     try {
-      const resposta = await fetch('https://api-melhor-em-casa.onrender.com/api/usuarios/login', {
+      const resposta = await fetch('http://localhost:8000/api/usuarios/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha })

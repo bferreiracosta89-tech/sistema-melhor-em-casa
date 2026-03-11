@@ -13,7 +13,7 @@ export default function TabelaDados() {
   const buscarDados = async () => {
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('https://api-melhor-em-casa.onrender.com/api/indicadores', {
+      const resposta = await fetch('http://localhost:8000/api/indicadores', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -37,7 +37,7 @@ export default function TabelaDados() {
     if (window.confirm(`Excluir permanentemente os dados de ${mes}?`)) {
       try {
         const token = localStorage.getItem('token_melhor_em_casa');
-        const resposta = await fetch(`https://api-melhor-em-casa.onrender.com/api/indicadores/${id}`, { 
+        const resposta = await fetch(`http://localhost:8000/api/indicadores/${id}`, { 
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -81,7 +81,7 @@ export default function TabelaDados() {
       };
 
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch(`https://api-melhor-em-casa.onrender.com/api/indicadores/${itemEditando.id}`, {
+      const resposta = await fetch(`http://localhost:8000/api/indicadores/${itemEditando.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export default function TabelaDados() {
     setExportando(true);
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
-      const resposta = await fetch('https://api-melhor-em-casa.onrender.com/api/indicadores/exportar', {
+      const resposta = await fetch('http://localhost:8000/api/indicadores/exportar', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
