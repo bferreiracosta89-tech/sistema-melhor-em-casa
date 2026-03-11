@@ -62,7 +62,14 @@ def startup_event():
         senha_criptografada = pwd_context.hash("Beni2025@")
         nome = "Bruno Ferreira"
         perfil = "admin"
-        novo_admin = models.Usuario(email="bruno.costa@uai.spdm.org.br", senha_hash=senha_criptografada)
+
+        # Adicionamos o nome e perfil aqui dentro:
+        novo_admin = models.Usuario(
+            email="bruno.costa@uai.spdm.org.br", 
+            senha_hash=senha_criptografada,
+            nome=nome,
+            perfil=perfil
+        )
         db.add(novo_admin)
         db.commit()
     db.close()
