@@ -51,7 +51,7 @@ export default function FormularioManual() {
       const token = localStorage.getItem('token_melhor_em_casa');
 
       // 2. Envia os dados junto com o token de segurança
-      const response = await fetch('http://localhost:8000/api/indicadores/manual', {
+      const response = await fetch('https://api-melhor-em-casa.onrender.com/api/indicadores/manual', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
