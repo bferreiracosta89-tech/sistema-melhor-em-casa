@@ -51,7 +51,7 @@ export default function FormularioManual() {
       const token = localStorage.getItem('token_melhor_em_casa');
 
       // 2. Envia os dados junto com o token de segurança
-      const response = await fetch('`${import.meta.env.VITE_API_URL}/api/indicadores/manual', {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/indicadores/manual', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
