@@ -8,13 +8,13 @@ load_dotenv()
 
 # Pega a URL do banco de dados do .env. 
 # Se não encontrar, usa o SQLite local como padrão de segurança.
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./banco_melhor_em_casa.db")
+SQLALCHEMY_DATABASE_URL = "postgresql://neondb_owner:npg_Ocxe5mQyzT2G@ep-hidden-glade-ah9xhkmh-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 # Configuração do motor do banco de dados
 # O argumento 'check_same_thread' é necessário apenas para o SQLite funcionar bem com o FastAPI
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+        SQLALCHEMY_DATABASE_URL
     )
 else:
     # Para PostgreSQL em produção (Render/Railway), usamos a conexão padrão

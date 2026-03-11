@@ -20,3 +20,5 @@ google-generativeai>=0.3.2
 
 # Variáveis de Ambiente (Para ler o arquivo .env localmente)
 python-dotenv>=1.0.1
+
+psycopg2-binary
