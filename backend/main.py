@@ -382,6 +382,24 @@ def listar_indicadores(usuario_logado: str = Depends(obter_usuario_atual), db: S
     indicadores = db.query(models.IndicadorMensal).all()
     return indicadores
 
+# Molde para receber os dados manuais
+class IndicadorManual(BaseModel):
+    mes: str
+    admissoes: int
+    altas_clinicas: int
+    obitos: int
+    feridas_ativas: int
+    pacientes_vm: int
+    pacientes_tqt: int
+    pacientes_gtt: int
+    pacientes_sne: int
+    cuidados_paliativos: int
+    uso_atb: int
+    pacientes_ativos: int
+    ad1: int
+    ad2: int
+    ad3: int
+    
 # 2. Cria a rota que vai receber esses dados
 @app.post("/api/indicadores/manual")
 def salvar_digitacao_manual(dados: IndicadorManual, usuario_logado: str = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
