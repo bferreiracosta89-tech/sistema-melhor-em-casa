@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fundo padrão do sistema */
+body {
+  background-color: #f8fafc;
+}
+
+@media print {
+  /* Isso mata a data, hora e o link localhost */
+  @page { 
+    margin: 0 !important; 
+  }
+
+  /* Dá um respiro para o conteúdo não colar na borda da folha */
+  body { 
+    padding: 1.5cm !important; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Esconde menus laterais */
+  aside, nav, [class*="sidebar"] {
+    display: none !important;
+  }
+}
