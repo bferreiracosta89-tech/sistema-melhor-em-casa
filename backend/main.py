@@ -33,9 +33,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-CHAVE_GEMINI = os.getenv("GEMINI_API_KEY", "COLE_SUA_CHAVE_AQUI")
-genai.configure(api_key=CHAVE_GEMINI)
 
 # ==========================================
 # INICIALIZAÇÃO DA API
@@ -636,3 +635,15 @@ def exportar_excel(usuario_logado: str = Depends(obter_usuario_atual), db: Sessi
         'Content-Disposition': 'attachment; filename="Relatorio_MelhorEmCasa.xlsx"'
     }
     return StreamingResponse(output, headers=headers, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(mensagem: str):
+    # Função geradora que entrega os pedaços (chunks)
+    def gerar_resposta():
+        resposta_gemini = model.generate_content(mensagem, stream=True)
+        for pedaco in resposta_gemini:
+            yield pedaco.text
+
+    # Retorna o stream contínuo para o frontend
+    return StreamingResponse(gerar_resposta(), media_type="text/plain")

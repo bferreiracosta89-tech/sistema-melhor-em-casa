@@ -12,18 +12,18 @@ export default function GeradorRelatorios() {
   const [mensagemAtual, setMensagemAtual] = useState("");
   const [enviandoChat, setEnviandoChat] = useState(false);
 
-  // 1. GERAR RELATÓRIO (Agora com Token)
+  // 1. GERAR RELATÓRIO
   const pedirParaIAGerar = async (tipoRelatorio) => {
     setGerando(true);
     setRelatorioIA(""); 
     setHistoricoChat([]); 
 
     try {
-      const token = localStorage.getItem('token_melhor_em_casa'); // Pega o token
+      const token = localStorage.getItem('token_melhor_em_casa');
 
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/relatorios/gerar?tipo=${tipoRelatorio}`, {
         headers: {
-          'Authorization': `Bearer ${token}` // Envia a autorização
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -49,24 +49,26 @@ export default function GeradorRelatorios() {
     html2pdf().set(opcoes).from(elemento).save();
   };
 
-  // 2. CHAT COM A IA (Agora com Token)
+  // 2. CHAT COM A IA (Agora com Streaming!)
   const enviarMensagemChat = async (e) => {
     e.preventDefault();
     if (!mensagemAtual.trim()) return;
 
     const novaMensagem = { role: 'user', text: mensagemAtual };
-    setHistoricoChat(prev => [...prev, novaMensagem]);
+
+    // Já coloca a pergunta do usuário e um espaço vazio para a IA começar a digitar
+    setHistoricoChat(prev => [...prev, novaMensagem, { role: 'ai', text: "" }]);
     setMensagemAtual("");
     setEnviandoChat(true);
 
     try {
-      const token = localStorage.getItem('token_melhor_em_casa'); // Pega o token
+      const token = localStorage.getItem('token_melhor_em_casa');
 
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/relatorios/chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Envia a autorização
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           mensagem: novaMensagem.text,
@@ -75,16 +77,33 @@ export default function GeradorRelatorios() {
       });
 
       if (!resposta.ok) throw new Error("Erro na API ou acesso negado");
-      const dados = await resposta.json();
 
-      setHistoricoChat(prev => [...prev, { role: 'ai', text: dados.resposta }]);
+      // MÁGICA DO STREAMING AQUI:
+      const reader = resposta.body.getReader();
+      const decoder = new TextDecoder("utf-8");
 
-      if (dados.novo_relatorio && dados.novo_relatorio !== relatorioIA) {
-        setRelatorioIA(dados.novo_relatorio);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break; // O Gemini terminou de falar
+
+        // Decodifica o pedacinho que chegou
+        const pedacoTexto = decoder.decode(value, { stream: true });
+
+        // Atualiza APENAS a última mensagem do chat (a da IA) adicionando a nova palavra
+        setHistoricoChat(prev => {
+          const novoHistorico = [...prev];
+          novoHistorico[novoHistorico.length - 1].text += pedacoTexto;
+          return novoHistorico;
+        });
       }
 
     } catch (erro) {
-      setHistoricoChat(prev => [...prev, { role: 'ai', text: "⚠️ Desculpe, ocorreu um erro ao processar sua pergunta." }]);
+      // Se der erro, substitui o texto vazio da IA pela mensagem de erro
+      setHistoricoChat(prev => {
+        const novoHistorico = [...prev];
+        novoHistorico[novoHistorico.length - 1].text = "⚠️ Desculpe, ocorreu um erro ao processar sua pergunta.";
+        return novoHistorico;
+      });
     } finally {
       setEnviandoChat(false);
     }
@@ -168,16 +187,7 @@ export default function GeradorRelatorios() {
                   </div>
                 ))
               )}
-              {enviandoChat && (
-                <div className="flex gap-3">
-                  <div className="p-2 rounded-full h-10 w-10 flex items-center justify-center bg-purple-100 text-purple-600">
-                    <Sparkles size={20} className="animate-spin" />
-                  </div>
-                  <div className="p-3 rounded-lg bg-white border border-gray-200 text-gray-500 italic">
-                    Digitando...
-                  </div>
-                </div>
-              )}
+              {/* Removi o aviso de "Digitando..." porque agora o texto já vai aparecer na hora! */}
             </div>
 
             <form onSubmit={enviarMensagemChat} className="p-4 bg-white border-t border-gray-200 flex gap-2">
