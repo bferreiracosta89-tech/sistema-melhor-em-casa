@@ -636,7 +636,7 @@ def exportar_excel(usuario_logado: str = Depends(obter_usuario_atual), db: Sessi
     }
     return StreamingResponse(output, headers=headers, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-aa
+
 @app.post("/api/chat/stream")
 async def chat_stream(mensagem: str):
     # Função geradora que entrega os pedaços (chunks)
