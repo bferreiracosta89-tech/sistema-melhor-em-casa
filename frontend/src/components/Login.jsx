@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+ const [carregando, setCarregando] = useState(false); // <-- Adicione esta linha
 export default function Login({ onLoginSucesso }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -8,7 +8,7 @@ export default function Login({ onLoginSucesso }) {
   const fazerLogin = async (e) => {
     e.preventDefault();
     setErro('');
-
+    setCarregando(true); // <-- LIGA O AVISO
     try {
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/login`, {
         method: 'POST',
@@ -29,6 +29,8 @@ export default function Login({ onLoginSucesso }) {
       }
     } catch (error) {
       setErro('Erro de conexão com o servidor.');
+    } finally {
+      setCarregando(false); // <-- DESLIGA O AVISO (dando certo ou errado)
     }
   };
 
@@ -60,12 +62,15 @@ export default function Login({ onLoginSucesso }) {
               onChange={(e) => setSenha(e.target.value)}
             />
           </div>
-          <button 
+         <button 
             type="submit" 
-            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-bold transition-colors"
+            disabled={carregando}
+            className={`w-full text-white p-2 rounded font-bold transition-colors ${
+              carregando ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
-            Entrar no Sistema
-          </button>
+            {carregando ? 'Acordando servidor, aguarde...' : 'Entrar no Sistema'}
+        </button>
         </form>
       </div>
     </div>
