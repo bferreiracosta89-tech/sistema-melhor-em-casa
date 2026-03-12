@@ -12,18 +12,18 @@ export default function GeradorRelatorios() {
   const [mensagemAtual, setMensagemAtual] = useState("");
   const [enviandoChat, setEnviandoChat] = useState(false);
 
-  // 1. GERAR RELATÓRIO
+  // 1. GERAR RELATÓRIO (Agora com Token)
   const pedirParaIAGerar = async (tipoRelatorio) => {
     setGerando(true);
     setRelatorioIA(""); 
     setHistoricoChat([]); 
 
     try {
-      const token = localStorage.getItem('token_melhor_em_casa');
+      const token = localStorage.getItem('token_melhor_em_casa'); // Pega o token
 
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/relatorios/gerar?tipo=${tipoRelatorio}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}` // Envia a autorização
         }
       });
 
@@ -49,26 +49,24 @@ export default function GeradorRelatorios() {
     html2pdf().set(opcoes).from(elemento).save();
   };
 
-  // 2. CHAT COM A IA (Agora com Streaming!)
+  // 2. CHAT COM A IA (Agora com Token)
   const enviarMensagemChat = async (e) => {
     e.preventDefault();
     if (!mensagemAtual.trim()) return;
 
     const novaMensagem = { role: 'user', text: mensagemAtual };
-
-    // Já coloca a pergunta do usuário e um espaço vazio para a IA começar a digitar
-    setHistoricoChat(prev => [...prev, novaMensagem, { role: 'ai', text: "" }]);
+    setHistoricoChat(prev => [...prev, novaMensagem]);
     setMensagemAtual("");
     setEnviandoChat(true);
 
     try {
-      const token = localStorage.getItem('token_melhor_em_casa');
+      const token = localStorage.getItem('token_melhor_em_casa'); // Pega o token
 
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/relatorios/chat`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}` // Envia a autorização
         },
         body: JSON.stringify({
           mensagem: novaMensagem.text,
@@ -77,33 +75,16 @@ export default function GeradorRelatorios() {
       });
 
       if (!resposta.ok) throw new Error("Erro na API ou acesso negado");
+      const dados = await resposta.json();
 
-      // MÁGICA DO STREAMING AQUI:
-      const reader = resposta.body.getReader();
-      const decoder = new TextDecoder("utf-8");
+      setHistoricoChat(prev => [...prev, { role: 'ai', text: dados.resposta }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break; // O Gemini terminou de falar
-
-        // Decodifica o pedacinho que chegou
-        const pedacoTexto = decoder.decode(value, { stream: true });
-
-        // Atualiza APENAS a última mensagem do chat (a da IA) adicionando a nova palavra
-        setHistoricoChat(prev => {
-          const novoHistorico = [...prev];
-          novoHistorico[novoHistorico.length - 1].text += pedacoTexto;
-          return novoHistorico;
-        });
+      if (dados.novo_relatorio && dados.novo_relatorio !== relatorioIA) {
+        setRelatorioIA(dados.novo_relatorio);
       }
 
     } catch (erro) {
-      // Se der erro, substitui o texto vazio da IA pela mensagem de erro
-      setHistoricoChat(prev => {
-        const novoHistorico = [...prev];
-        novoHistorico[novoHistorico.length - 1].text = "⚠️ Desculpe, ocorreu um erro ao processar sua pergunta.";
-        return novoHistorico;
-      });
+      setHistoricoChat(prev => [...prev, { role: 'ai', text: "⚠️ Desculpe, ocorreu um erro ao processar sua pergunta." }]);
     } finally {
       setEnviandoChat(false);
     }
@@ -187,7 +168,16 @@ export default function GeradorRelatorios() {
                   </div>
                 ))
               )}
-              {/* Removi o aviso de "Digitando..." porque agora o texto já vai aparecer na hora! */}
+              {enviandoChat && (
+                <div className="flex gap-3">
+                  <div className="p-2 rounded-full h-10 w-10 flex items-center justify-center bg-purple-100 text-purple-600">
+                    <Sparkles size={20} className="animate-spin" />
+                  </div>
+                  <div className="p-3 rounded-lg bg-white border border-gray-200 text-gray-500 italic">
+                    Digitando...
+                  </div>
+                </div>
+              )}
             </div>
 
             <form onSubmit={enviarMensagemChat} className="p-4 bg-white border-t border-gray-200 flex gap-2">
