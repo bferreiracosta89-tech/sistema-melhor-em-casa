@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
- const [carregando, setCarregando] = useState(false); // <-- Adicione esta linha
+
 export default function Login({ onLoginSucesso }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
-
+ const [carregando, setCarregando] = useState(false); // <-- Adicione esta linha
   const fazerLogin = async (e) => {
     e.preventDefault();
     setErro('');
