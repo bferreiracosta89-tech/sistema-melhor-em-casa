@@ -136,7 +136,7 @@ export default function LayoutPrincipal({ children, abaAtiva, setAbaAtiva }) {
 
           {/* Perfil do Usuário */}
           <div className="flex items-center gap-4">
-            <div className="mt-6 text-right hidden md:block">
+            <div className="text-right hidden md:block">
               <InfoUsuario />
             </div>
             <div className="bg-blue-100 p-2 md:p-3 rounded-full border border-blue-200 shrink-0">
