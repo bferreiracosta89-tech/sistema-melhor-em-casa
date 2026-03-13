@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-// IMPORTAÇÕES CORRIGIDAS (Adicionado AreaChart, PieChart, Cell, etc)
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, HeartPulse, AlertCircle, Printer, UserCheck, LayoutDashboard, PieChart as PieChartIcon } from 'lucide-react';
-import html2pdf from 'html22pdf.js'; // Usando html2pdf.js para exportação
+import html2canvas from 'html2canvas'; // Importação CORRETA
+import jsPDF from 'jspdf'; // Importação CORRETA
 
 const CORES = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -70,28 +70,28 @@ export default function DashboardUnificado() {
     buscarDados();
   }, []);
 
-  // 2. GERAR PDF
+  // 2. GERAR PDF (Usando html2canvas e jsPDF, como no seu original)
   const gerarPDF = async () => {
     setGerandoPdf(true);
     const elemento = document.getElementById('conteudo-pdf');
 
     try {
-      const opcoes = {
-        margin: [10, 10, 10, 10], // Top, Left, Bottom, Right
-        filename: `Dashboard_${abaInterna}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      const canvas = await html2canvas(elemento, {
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: '#ffffff' 
+      });
 
-      // Adiciona um título antes de gerar o PDF
-      const titulo = abaInterna === 'geral' ? "Relatório de Indicadores Gerais" : "Relatório de Análise Avançada";
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = `<h1 style="font-size: 24px; font-weight: bold; margin-bottom: 15px; text-align: center;">${titulo}</h1>`;
-      tempDiv.appendChild(elemento.cloneNode(true)); // Clona o conteúdo para não alterar o DOM original
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4'); 
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      await html2pdf().set(opcoes).from(tempDiv).save();
-
+      pdf.setFontSize(18);
+      pdf.setTextColor(30, 41, 59);
+      pdf.text(abaInterna === 'geral' ? "Relatório de Indicadores Gerais" : "Relatório de Análise Avançada", 14, 15);
+      pdf.addImage(imgData, 'PNG', 0, 25, pdfWidth, pdfHeight);
+      pdf.save(`Dashboard_${abaInterna}.pdf`);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       alert("Ocorreu um erro ao gerar o PDF.");
@@ -101,98 +101,112 @@ export default function DashboardUnificado() {
   };
 
   if (carregando) {
-    return <div className="p-4 md:p-6 text-center text-slate-500 font-semibold">Carregando dashboard...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen text-slate-600">
+        <svg className="animate-spin h-8 w-8 mr-3 text-blue-500" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Carregando dados do dashboard...
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto"> {/* Padding ajustado */}
+    <div className="p-4 md:p-6 bg-slate-50 min-h-screen" id="conteudo-pdf"> {/* Padding responsivo */}
+      <div className="max-w-7xl mx-auto">
+        {/* Cabeçalho */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"> {/* Layout responsivo */}
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800">Dashboard Unificado</h1> {/* Tamanho da fonte responsivo */}
+            <p className="text-sm md:text-base text-slate-500">Visão geral e análise detalhada dos indicadores.</p> {/* Tamanho da fonte responsivo */}
+          </div>
+          <button
+            onClick={gerarPDF}
+            disabled={gerandoPdf}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md text-sm md:text-base" // Largura e padding responsivos
+          >
+            {gerandoPdf ? 'Gerando PDF...' : <><Printer size={18} /> Baixar PDF</>}
+          </button>
+        </div>
 
-      {/* CABEÇALHO PRINCIPAL */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4"> {/* Layout responsivo */}
-        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">Dashboard Unificado</h2> {/* Tamanho da fonte responsivo */}
-        <button 
-          onClick={gerarPDF}
-          disabled={gerandoPdf}
-          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-white transition-colors shadow-sm text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
-            gerandoPdf ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          <Printer size={20} />
-          {gerandoPdf ? 'Gerando PDF...' : 'Exportar para PDF'}
-        </button>
-      </div>
+        {/* Abas de Navegação */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 border-b border-slate-200 pb-2"> {/* Layout responsivo */}
+          <button
+            onClick={() => setAbaInterna('geral')}
+            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg font-medium transition-colors text-sm md:text-base ${ // Largura e padding responsivos
+              abaInterna === 'geral'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <LayoutDashboard size={18} className="inline-block mr-2" /> Indicadores Gerais
+          </button>
+          <button
+            onClick={() => setAbaInterna('avancado')}
+            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg font-medium transition-colors text-sm md:text-base ${ // Largura e padding responsivos
+              abaInterna === 'avancado'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <PieChartIcon size={18} className="inline-block mr-2" /> Análise Avançada
+          </button>
+        </div>
 
-      {/* BOTÕES DE ABAS */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6"> {/* Layout responsivo */}
-        <button
-          onClick={() => setAbaInterna('geral')}
-          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
-            abaInterna === 'geral' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <LayoutDashboard size={20} /> Indicadores Gerais
-        </button>
-        <button
-          onClick={() => setAbaInterna('avancado')}
-          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
-            abaInterna === 'avancado' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <PieChartIcon size={20} /> Análise Avançada
-        </button>
-      </div>
-
-      {/* CONTEÚDO DINÂMICO DAS ABAS */}
-      <div id="conteudo-pdf"> {/* ID para o PDF */}
+        {/* Conteúdo da Aba Geral */}
         {abaInterna === 'geral' && (
           <div>
-            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4">Resumo do {nomeMesAtual}</h3> {/* Tamanho da fonte responsivo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"> {/* Grid responsivo */}
-
-              {/* Card 1: Pacientes Ativos */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center"> {/* Padding ajustado */}
-                <div className="bg-blue-100 text-blue-600 p-3 rounded-full mb-3">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-5">Resumo do {nomeMesAtual}</h2> {/* Tamanho da fonte responsivo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8"> {/* Grid responsivo */}
+              {/* Card Pacientes Ativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4"> {/* Padding responsivo */}
+                <div className="bg-blue-100 p-3 rounded-full text-blue-600 shrink-0">
                   <Users size={20} className="md:w-6 md:h-6" /> {/* Tamanho do ícone responsivo */}
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Pacientes Ativos</p> {/* Tamanho da fonte responsivo */}
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{ultimoDado ? ultimoDado.pacientes_ativos : 'N/A'}</p> {/* Tamanho da fonte responsivo */}
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Pacientes Ativos</p> {/* Tamanho da fonte responsivo */}
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{ultimoDado ? ultimoDado.pacientes_ativos : 'N/A'}</p> {/* Tamanho da fonte responsivo */}
+                </div>
               </div>
-
-              {/* Card 2: Admissões */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-green-100 text-green-600 p-3 rounded-full mb-3">
+              {/* Card Admissões */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-green-100 p-3 rounded-full text-green-600 shrink-0">
                   <UserCheck size={20} className="md:w-6 md:h-6" />
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Admissões ({nomeMesAtual})</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{admissoesMes}</p>
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Admissões ({nomeMesAtual})</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{admissoesMes}</p>
+                </div>
               </div>
-
-              {/* Card 3: Altas Clínicas */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-purple-100 text-purple-600 p-3 rounded-full mb-3">
+              {/* Card Altas Clínicas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-purple-100 p-3 rounded-full text-purple-600 shrink-0">
                   <HeartPulse size={20} className="md:w-6 md:h-6" />
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Altas Clínicas ({nomeMesAtual})</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{altasMes}</p>
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Altas Clínicas ({nomeMesAtual})</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{altasMes}</p>
+                </div>
               </div>
-
-              {/* Card 4: Óbitos */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-red-100 text-red-600 p-3 rounded-full mb-3">
+              {/* Card Óbitos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-red-100 p-3 rounded-full text-red-600 shrink-0">
                   <AlertCircle size={20} className="md:w-6 md:h-6" />
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Óbitos ({nomeMesAtual})</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{obitosMes}</p>
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Óbitos ({nomeMesAtual})</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{obitosMes}</p>
+                </div>
               </div>
             </div>
 
-            {/* GRÁFICOS GERAIS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6"> {/* Grid responsivo */}
-
-              {/* Gráfico de Admissões e Altas */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200"> {/* Padding ajustado */}
-                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 text-center">Admissões vs. Altas</h3> {/* Tamanho da fonte responsivo */}
-                <div className="h-64 md:h-80 w-full"> {/* Altura responsiva */}
+            {/* Gráficos da Aba Geral */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"> {/* Grid responsivo */}
+              {/* Gráfico de Pacientes Ativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200"> {/* Padding responsivo */}
+                <h3 className="text-base md:text-lg font-bold text-blue-800 mb-4 text-center">📊 Pacientes Ativos por Mês</h3> {/* Tamanho da fonte responsivo */}
+                <div className="h-64 md:h-72 w-full"> {/* Altura responsiva */}
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dados}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -200,32 +214,26 @@ export default function DashboardUnificado() {
                       <YAxis stroke="#64748b" tick={{ fontSize: 10 }} /> {/* Tamanho da fonte do tick */}
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: '12px' }} /> {/* Tamanho da fonte da legenda */}
-                      <Line type="monotone" dataKey="admissoes" name="Admissões" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 6 }} /> {/* Largura da linha e tamanho do dot */}
-                      <Line type="monotone" dataKey="altas_clinicas" name="Altas Clínicas" stroke="#10b981" strokeWidth={2} activeDot={{ r: 6 }} />
+                      <Line type="monotone" dataKey="pacientes_ativos" name="Pacientes Ativos" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 6 }} /> {/* Largura da linha e tamanho do dot */}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Gráfico de Pacientes Ativos */}
+              {/* Gráfico de Admissões e Altas */}
               <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 text-center">Pacientes Ativos</h3>
-                <div className="h-64 md:h-80 w-full">
+                <h3 className="text-base md:text-lg font-bold text-green-800 mb-4 text-center">📈 Admissões e Altas Clínicas</h3>
+                <div className="h-64 md:h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={dados}>
-                      <defs>
-                        <linearGradient id="corAtivos" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
+                    <BarChart data={dados}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                       <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
                       <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Area type="monotone" dataKey="pacientes_ativos" name="Pacientes Ativos" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#corAtivos)" />
-                    </AreaChart>
+                      <Bar dataKey="admissoes" name="Admissões" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="altas_clinicas" name="Altas Clínicas" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -233,88 +241,88 @@ export default function DashboardUnificado() {
           </div>
         )}
 
+        {/* Conteúdo da Aba Avançada */}
         {abaInterna === 'avancado' && (
           <div>
-            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4">Análise Avançada</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"> {/* Grid responsivo */}
-
-              {/* Card 1: Média de Feridas Ativas */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-red-100 text-red-600 p-3 rounded-full mb-3">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-5">Análise Detalhada</h2> {/* Tamanho da fonte responsivo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8"> {/* Grid responsivo */}
+              {/* Card Média de Feridas Ativas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-orange-100 p-3 rounded-full text-orange-600 shrink-0">
                   <AlertCircle size={20} className="md:w-6 md:h-6" />
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Média Feridas Ativas</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{mediaFeridas}</p>
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Média Feridas Ativas</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{mediaFeridas}</p>
+                </div>
               </div>
-
-              {/* Card 2: Pacientes em VM */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mb-3">
+              {/* Card Pacientes em VM */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-cyan-100 p-3 rounded-full text-cyan-600 shrink-0">
                   <HeartPulse size={20} className="md:w-6 md:h-6" />
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Pacientes em VM ({nomeMesAtual})</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{vmAtual}</p>
-              </div>
-
-              {/* Card 3: Pacientes em Paliativos */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-                <div className="bg-purple-100 text-purple-600 p-3 rounded-full mb-3">
-                  <Users size={20} className="md:w-6 md:h-6" />
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">Pacientes em VM ({nomeMesAtual})</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{vmAtual}</p>
                 </div>
-                <p className="text-xs md:text-sm text-slate-500 mb-1">Paliativos ({nomeMesAtual})</p>
-                <p className="text-2xl md:text-3xl font-bold text-slate-800">{paliativosAtuais}</p>
+              </div>
+              {/* Card Cuidados Paliativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div className="bg-purple-100 p-3 rounded-full text-purple-600 shrink-0">
+                  <HeartPulse size={20} className="md:w-6 md:h-6" />
+                </div>
+                <div>
+                  <p className="text-xs md:text-sm text-slate-500 font-medium">C. Paliativos ({nomeMesAtual})</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-800">{paliativosAtuais}</p>
+                </div>
               </div>
             </div>
 
-            {/* GRÁFICOS AVANÇADOS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6"> {/* Grid responsivo */}
-
-              {/* Gráfico de Feridas Ativas */}
+            {/* Gráficos da Aba Avançada */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"> {/* Grid responsivo */}
+              {/* Gráfico de Pizza de Uso de Dispositivos */}
               <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-base md:text-lg font-bold text-red-800 mb-4 text-center">Feridas Ativas</h3>
-                <div className="h-64 md:h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={dados}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
-                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend wrapperStyle={{ fontSize: '12px' }} />
-                      <Line type="monotone" dataKey="feridas_ativas" name="Feridas Ativas" stroke="#ef4444" strokeWidth={2} activeDot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Gráfico de Uso de Dispositivos (Pizza) */}
-              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 border-b pb-2 w-full gap-2"> {/* Layout responsivo para o cabeçalho do gráfico */}
-                  <h3 className="text-base md:text-lg font-bold text-slate-800">Uso de Dispositivos</h3>
-                  <select 
-                    className="w-full sm:w-auto p-1.5 md:p-2 border border-slate-300 rounded-md bg-slate-50 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base" // Largura, padding e texto ajustados
+                <h3 className="text-base md:text-lg font-bold text-indigo-800 mb-4 text-center">⚙️ Uso de Dispositivos ({mesSelecionado})</h3>
+                <div className="mb-4 flex justify-center">
+                  <select
                     value={mesSelecionado}
                     onChange={(e) => setMesSelecionado(e.target.value)}
+                    className="w-full sm:w-auto p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm md:text-base" // Largura e padding responsivos
                   >
-                    {dados.map((d, index) => (
-                      <option key={index} value={d.mes}>{d.mes}</option>
+                    {dados.map((d) => (
+                      <option key={d.mes} value={d.mes}>
+                        {d.mes}
+                      </option>
                     ))}
                   </select>
                 </div>
                 {mesEstaZerado ? (
-                  <div className="h-64 flex items-center justify-center text-slate-400 font-medium text-center px-4 text-sm md:text-base">
-                    Nenhum paciente em VM, TQT, GTT ou SNE registrado para este mês.
+                  <div className="h-64 md:h-80 flex items-center justify-center text-slate-500 text-sm md:text-base">
+                    Nenhum dado de dispositivo para este mês.
                   </div>
                 ) : (
-                  <div className="h-64 md:h-72 w-full">
+                  <div className="h-64 md:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={dadosPizza} cx="50%" cy="50%" innerRadius={40} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value" label={{ fontSize: '10px' }}> {/* Tamanho do raio e da fonte do label ajustados */}
+                        <Pie
+                          data={dadosPizza}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40} // Raio interno responsivo
+                          outerRadius={80} // Raio externo responsivo
+                          fill="#8884d8"
+                          paddingAngle={5}
+                          dataKey="value"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          animationDuration={500}
+                        >
                           {dadosPizza.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />
                           ))}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} /> {/* Tamanho da fonte da legenda ajustado */}
+                        <Legend wrapperStyle={{ fontSize: '12px' }} verticalAlign="bottom" height={36} /> {/* Tamanho da fonte da legenda */}
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -364,7 +372,6 @@ export default function DashboardUnificado() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
