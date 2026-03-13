@@ -2,65 +2,96 @@ import React, { useState, useEffect } from 'react';
 // IMPORTAÇÕES CORRIGIDAS (Adicionado AreaChart, PieChart, Cell, etc)
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Users, HeartPulse, AlertCircle, Printer, UserCheck, LayoutDashboard, PieChart as PieChartIcon } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import html2pdf from 'html22pdf.js'; // Usando html2pdf.js para exportação
+
+const CORES = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export default function DashboardUnificado() {
   const [dados, setDados] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [abaInterna, setAbaInterna] = useState('geral'); // 'geral' ou 'avancado'
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [mesSelecionado, setMesSelecionado] = useState('');
 
-  // Controles de Tela
-  const [abaInterna, setAbaInterna] = useState('geral');
-  const [mesSelecionado, setMesSelecionado] = useState(''); // Para o gráfico de pizza
+  // Dados do último mês para os cards de resumo
+  const ultimoDado = dados.length > 0 ? dados[dados.length - 1] : null;
+  const nomeMesAtual = ultimoDado ? ultimoDado.mes : 'N/A';
+  const admissoesMes = ultimoDado ? Number(ultimoDado.admissoes || 0) : 0;
+  const altasMes = ultimoDado ? Number(ultimoDado.altas_clinicas || 0) : 0;
+  const obitosMes = ultimoDado ? Number(ultimoDado.obitos || 0) : 0;
+
+  // Cálculos para Aba Avançada
+  const mediaFeridas = dados.length > 0 
+    ? (dados.reduce((acc, curr) => acc + Number(curr.feridas_ativas || 0), 0) / dados.length).toFixed(1)
+    : '0.0';
+
+  const vmAtual = ultimoDado ? Number(ultimoDado.pacientes_vm || 0) : 0;
+  const paliativosAtuais = ultimoDado ? Number(ultimoDado.cuidados_paliativos || 0) : 0;
+
+  // Dados para o PieChart de Dispositivos
+  const dadosMesSelecionado = dados.find(d => d.mes === mesSelecionado);
+  const dadosPizza = dadosMesSelecionado ? [
+    { name: 'VM', value: Number(dadosMesSelecionado.pacientes_vm || 0) },
+    { name: 'TQT', value: Number(dadosMesSelecionado.pacientes_tqt || 0) },
+    { name: 'GTT', value: Number(dadosMesSelecionado.pacientes_gtt || 0) },
+    { name: 'SNE', value: Number(dadosMesSelecionado.pacientes_sne || 0) },
+  ].filter(item => item.value > 0) : [];
+  const mesEstaZerado = dadosPizza.length === 0;
+
+  // 1. BUSCAR DADOS
+  const buscarDados = async () => {
+    try {
+      const token = localStorage.getItem('token_melhor_em_casa');
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!resposta.ok) throw new Error("Acesso negado");
+
+      const dadosBanco = await resposta.json();
+      setDados(dadosBanco.sort((a, b) => {
+        // Ordena por mês (assumindo que "mes" é uma string como "Janeiro", "Fevereiro")
+        const mesesOrdem = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        return mesesOrdem.indexOf(a.mes) - mesesOrdem.indexOf(b.mes);
+      }));
+
+      // Define o último mês como padrão para o gráfico de pizza
+      if (dadosBanco.length > 0) {
+        setMesSelecionado(dadosBanco[dadosBanco.length - 1].mes);
+      }
+    } catch (erro) {
+      console.error("Erro ao buscar dados:", erro);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   useEffect(() => {
-    const buscarDados = async () => {
-      try {
-        const token = localStorage.getItem('token_melhor_em_casa');
-        const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (resposta.ok) {
-          const dadosBanco = await resposta.json();
-          setDados(dadosBanco);
-          // Define o último mês como padrão para o gráfico de pizza
-          if (dadosBanco.length > 0) {
-            setMesSelecionado(dadosBanco[dadosBanco.length - 1].mes);
-          }
-        }
-      } catch (erro) {
-        console.error("Erro ao buscar dados:", erro);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
     buscarDados();
   }, []);
 
+  // 2. GERAR PDF
   const gerarPDF = async () => {
     setGerandoPdf(true);
     const elemento = document.getElementById('conteudo-pdf');
 
     try {
-      const canvas = await html2canvas(elemento, {
-        scale: 2, 
-        useCORS: true,
-        backgroundColor: '#ffffff' 
-      });
+      const opcoes = {
+        margin: [10, 10, 10, 10], // Top, Left, Bottom, Right
+        filename: `Dashboard_${abaInterna}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4'); 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // Adiciona um título antes de gerar o PDF
+      const titulo = abaInterna === 'geral' ? "Relatório de Indicadores Gerais" : "Relatório de Análise Avançada";
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = `<h1 style="font-size: 24px; font-weight: bold; margin-bottom: 15px; text-align: center;">${titulo}</h1>`;
+      tempDiv.appendChild(elemento.cloneNode(true)); // Clona o conteúdo para não alterar o DOM original
 
-      pdf.setFontSize(18);
-      pdf.setTextColor(30, 41, 59);
-      pdf.text(abaInterna === 'geral' ? "Relatório de Indicadores Gerais" : "Relatório de Análise Avançada", 14, 15);
-      pdf.addImage(imgData, 'PNG', 0, 25, pdfWidth, pdfHeight);
-      pdf.save(`Dashboard_${abaInterna}.pdf`);
+      await html2pdf().set(opcoes).from(tempDiv).save();
+
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       alert("Ocorreu um erro ao gerar o PDF.");
@@ -69,55 +100,20 @@ export default function DashboardUnificado() {
     }
   };
 
-  // ==========================================
-  // MATEMÁTICA E VARIÁVEIS (Geral e Avançado)
-  // ==========================================
-  const ultimoDado = dados.length > 0 ? dados[dados.length - 1] : null;
-  const nomeMesAtual = ultimoDado ? ultimoDado.mes : 'Mês Atual';
-
-  // Variáveis do Geral
-  const admissoesMes = ultimoDado ? Number(ultimoDado.admissoes || 0) : 0;
-  const altasMes = ultimoDado ? Number(ultimoDado.altas_clinicas || 0) : 0;
-  const obitosMes = ultimoDado ? Number(ultimoDado.obitos || 0) : 0;
-
-  // Variáveis do Avançado
-  const totalFeridas = dados.reduce((acc, curr) => acc + Number(curr.feridas_ativas || 0), 0);
-  const mediaFeridas = dados.length > 0 ? Math.round(totalFeridas / dados.length) : 0;
-    // 1. Consertando o card de Respiradores
-  const vmAtual = ultimoDado ? Number(ultimoDado.pacientes_vm || 0) : 0;
-  const paliativosAtuais = ultimoDado ? Number(ultimoDado.cuidados_paliativos || 0) : 0;
-
-    // --- SUBSTITUA ESTE BLOCO NO SEU REACT ---
-
-  const dadosMesSelecionado = dados.find(d => d.mes === mesSelecionado) || ultimoDado;
-
-  // 1. Adicionamos GTT e SNE na lista do gráfico
-  const dadosPizza = dadosMesSelecionado ? [
-    { name: 'Ventilação Mecânica', value: Number(dadosMesSelecionado.pacientes_vm || 0) },
-    { name: 'Traqueostomia', value: Number(dadosMesSelecionado.pacientes_tqt || 0) },
-    { name: 'Gastrostomia (GTT)', value: Number(dadosMesSelecionado.pacientes_gtt || 0) },
-    { name: 'Sonda Nasoenteral (SNE)', value: Number(dadosMesSelecionado.pacientes_sne || 0) }
-  ] : [];
-
-  const mesEstaZerado = dadosPizza.every(item => item.value === 0);
-
-  // 2. Adicionamos mais duas cores (Roxo e Laranja) para as novas fatias
-  const CORES = ['#3b82f6', '#10b981', '#a855f7', '#f59e0b']; 
-
   if (carregando) {
-    return <div className="p-6 text-center text-slate-500 font-semibold">Carregando dashboard...</div>;
+    return <div className="p-4 md:p-6 text-center text-slate-500 font-semibold">Carregando dashboard...</div>;
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto"> {/* Padding ajustado */}
 
       {/* CABEÇALHO PRINCIPAL */}
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
-        <h2 className="text-3xl font-bold text-slate-800">Dashboard Unificado</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4"> {/* Layout responsivo */}
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-800">Dashboard Unificado</h2> {/* Tamanho da fonte responsivo */}
         <button 
           onClick={gerarPDF}
           disabled={gerandoPdf}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white transition-colors shadow-sm ${
+          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold text-white transition-colors shadow-sm text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
             gerandoPdf ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
           }`}
         >
@@ -127,150 +123,175 @@ export default function DashboardUnificado() {
       </div>
 
       {/* BOTÕES DE ABAS */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6"> {/* Layout responsivo */}
         <button
           onClick={() => setAbaInterna('geral')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
-            abaInterna === 'geral' 
-              ? 'bg-blue-100 text-blue-700' 
-              : 'text-slate-500 hover:bg-slate-100'
+          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
+            abaInterna === 'geral' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <LayoutDashboard size={20} /> Indicadores Gerais
         </button>
-
         <button
           onClick={() => setAbaInterna('avancado')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
-            abaInterna === 'avancado' 
-              ? 'bg-purple-100 text-purple-700' 
-              : 'text-slate-500 hover:bg-slate-100'
+          className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors text-sm md:text-base ${ // Largura e tamanho da fonte responsivos
+            abaInterna === 'avancado' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <PieChartIcon size={20} /> Análise Avançada
         </button>
       </div>
 
-      {/* ÁREA QUE SERÁ EXPORTADA PARA PDF */}
-      <div id="conteudo-pdf" className="bg-slate-50/50 p-2 rounded-xl">
+      {/* CONTEÚDO DINÂMICO DAS ABAS */}
+      <div id="conteudo-pdf"> {/* ID para o PDF */}
+        {abaInterna === 'geral' && (
+          <div>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4">Resumo do {nomeMesAtual}</h3> {/* Tamanho da fonte responsivo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"> {/* Grid responsivo */}
 
-        {abaInterna === 'geral' ? (
-          /* ================= ABA GERAL ================= */
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
-                <div className="bg-purple-100 p-4 rounded-lg text-purple-600"><UserCheck size={24} /></div>
-                <div>
-                  <p className="text-sm text-slate-500">Ativos em {nomeMesAtual}</p>
-                  <p className="text-2xl font-bold text-slate-800">
-                    {ultimoDado ? Number(ultimoDado.pacientes_ativos || 0) : 0}
-                  </p>
+              {/* Card 1: Pacientes Ativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center"> {/* Padding ajustado */}
+                <div className="bg-blue-100 text-blue-600 p-3 rounded-full mb-3">
+                  <Users size={20} className="md:w-6 md:h-6" /> {/* Tamanho do ícone responsivo */}
                 </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Pacientes Ativos</p> {/* Tamanho da fonte responsivo */}
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{ultimoDado ? ultimoDado.pacientes_ativos : 'N/A'}</p> {/* Tamanho da fonte responsivo */}
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
-                <div className="bg-blue-100 p-4 rounded-lg text-blue-600"><Users size={24} /></div>
-                <div>
-                  <p className="text-sm text-slate-500">Admissões em {nomeMesAtual}</p>
-                  <p className="text-2xl font-bold text-slate-800">{admissoesMes}</p>
+              {/* Card 2: Admissões */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-green-100 text-green-600 p-3 rounded-full mb-3">
+                  <UserCheck size={20} className="md:w-6 md:h-6" />
                 </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Admissões ({nomeMesAtual})</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{admissoesMes}</p>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
-                <div className="bg-green-100 p-4 rounded-lg text-green-600"><HeartPulse size={24} /></div>
-                <div>
-                  <p className="text-sm text-slate-500">Altas em {nomeMesAtual}</p>
-                  <p className="text-2xl font-bold text-slate-800">{altasMes}</p>
+              {/* Card 3: Altas Clínicas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-purple-100 text-purple-600 p-3 rounded-full mb-3">
+                  <HeartPulse size={20} className="md:w-6 md:h-6" />
                 </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Altas Clínicas ({nomeMesAtual})</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{altasMes}</p>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
-                <div className="bg-red-100 p-4 rounded-lg text-red-600"><AlertCircle size={24} /></div>
-                <div>
-                  <p className="text-sm text-slate-500">Óbitos em {nomeMesAtual}</p>
-                  <p className="text-2xl font-bold text-slate-800">{obitosMes}</p>
+              {/* Card 4: Óbitos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-red-100 text-red-600 p-3 rounded-full mb-3">
+                  <AlertCircle size={20} className="md:w-6 md:h-6" />
                 </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Óbitos ({nomeMesAtual})</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{obitosMes}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Admissões, Altas e Óbitos</h3>
-                <div className="h-72">
+            {/* GRÁFICOS GERAIS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6"> {/* Grid responsivo */}
+
+              {/* Gráfico de Admissões e Altas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200"> {/* Padding ajustado */}
+                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 text-center">Admissões vs. Altas</h3> {/* Tamanho da fonte responsivo */}
+                <div className="h-64 md:h-80 w-full"> {/* Altura responsiva */}
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dados}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
+                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} /> {/* Tamanho da fonte do tick */}
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} /> {/* Tamanho da fonte do tick */}
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend />
-                      <Line type="monotone" dataKey="admissoes" name="Admissões" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="altas_clinicas" name="Altas Clínicas" stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="obitos" name="Óbitos" stroke="#ef4444" strokeWidth={3} dot={{ r: 4 }} />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} /> {/* Tamanho da fonte da legenda */}
+                      <Line type="monotone" dataKey="admissoes" name="Admissões" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 6 }} /> {/* Largura da linha e tamanho do dot */}
+                      <Line type="monotone" dataKey="altas_clinicas" name="Altas Clínicas" stroke="#10b981" strokeWidth={2} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Complexidade (AD1, AD2, AD3)</h3>
-                <div className="h-72">
+              {/* Gráfico de Pacientes Ativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="text-base md:text-lg font-bold text-slate-800 mb-4 text-center">Pacientes Ativos</h3>
+                <div className="h-64 md:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dados}>
+                    <AreaChart data={dados}>
+                      <defs>
+                        <linearGradient id="corAtivos" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend />
-                      <Bar dataKey="ad1" name="AD1" fill="#93c5fd" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="ad2" name="AD2" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="ad3" name="AD3" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <Area type="monotone" dataKey="pacientes_ativos" name="Pacientes Ativos" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#corAtivos)" />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          /* ================= ABA AVANÇADA ================= */
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-red-500">
-                <p className="text-sm text-slate-500 font-semibold uppercase">Média de Feridas (Ano)</p>
-                <p className="text-3xl font-bold text-slate-800 mt-2">🩹 {mediaFeridas}</p>
+        )}
+
+        {abaInterna === 'avancado' && (
+          <div>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-4">Análise Avançada</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"> {/* Grid responsivo */}
+
+              {/* Card 1: Média de Feridas Ativas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-red-100 text-red-600 p-3 rounded-full mb-3">
+                  <AlertCircle size={20} className="md:w-6 md:h-6" />
+                </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Média Feridas Ativas</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{mediaFeridas}</p>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
-                <p className="text-sm text-slate-500 font-semibold uppercase">Respiradores em {nomeMesAtual}</p>
-                <p className="text-3xl font-bold text-slate-800 mt-2">🫁 {vmAtual}</p>
+
+              {/* Card 2: Pacientes em VM */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full mb-3">
+                  <HeartPulse size={20} className="md:w-6 md:h-6" />
+                </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Pacientes em VM ({nomeMesAtual})</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{vmAtual}</p>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500">
-                <p className="text-sm text-slate-500 font-semibold uppercase">Paliativos em {nomeMesAtual}</p>
-                <p className="text-3xl font-bold text-slate-800 mt-2">💜 {paliativosAtuais}</p>
+
+              {/* Card 3: Pacientes em Paliativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
+                <div className="bg-purple-100 text-purple-600 p-3 rounded-full mb-3">
+                  <Users size={20} className="md:w-6 md:h-6" />
+                </div>
+                <p className="text-xs md:text-sm text-slate-500 mb-1">Paliativos ({nomeMesAtual})</p>
+                <p className="text-2xl md:text-3xl font-bold text-slate-800">{paliativosAtuais}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-6 text-center">Evolução de Feridas Ativas</h3>
-                <div className="h-72 w-full">
+            {/* GRÁFICOS AVANÇADOS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6"> {/* Grid responsivo */}
+
+              {/* Gráfico de Feridas Ativas */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="text-base md:text-lg font-bold text-red-800 mb-4 text-center">Feridas Ativas</h3>
+                <div className="h-64 md:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={dados}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
+                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend />
-                      <Line type="monotone" dataKey="feridas_ativas" name="Feridas Ativas" stroke="#ef4444" strokeWidth={3} activeDot={{ r: 8 }} />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <Line type="monotone" dataKey="feridas_ativas" name="Feridas Ativas" stroke="#ef4444" strokeWidth={2} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
-                <div className="flex justify-between items-center mb-6 border-b pb-2 w-full">
-                  <h3 className="text-lg font-bold text-slate-800">Uso de Dispositivos</h3>
+              {/* Gráfico de Uso de Dispositivos (Pizza) */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-4 border-b pb-2 w-full gap-2"> {/* Layout responsivo para o cabeçalho do gráfico */}
+                  <h3 className="text-base md:text-lg font-bold text-slate-800">Uso de Dispositivos</h3>
                   <select 
-                    className="p-2 border border-slate-300 rounded-md bg-slate-50 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full sm:w-auto p-1.5 md:p-2 border border-slate-300 rounded-md bg-slate-50 font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base" // Largura, padding e texto ajustados
                     value={mesSelecionado}
                     onChange={(e) => setMesSelecionado(e.target.value)}
                   >
@@ -280,29 +301,30 @@ export default function DashboardUnificado() {
                   </select>
                 </div>
                 {mesEstaZerado ? (
-                  <div className="h-64 flex items-center justify-center text-slate-400 font-medium text-center px-4">
-                    Nenhum paciente em VM ou TQT registrado.
+                  <div className="h-64 flex items-center justify-center text-slate-400 font-medium text-center px-4 text-sm md:text-base">
+                    Nenhum paciente em VM, TQT, GTT ou SNE registrado para este mês.
                   </div>
                 ) : (
-                  <div className="h-64 w-full">
+                  <div className="h-64 md:h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={dadosPizza} cx="50%" cy="50%" innerRadius={60} outerRadius={100} fill="#8884d8" paddingAngle={5} dataKey="value" label>
+                        <Pie data={dadosPizza} cx="50%" cy="50%" innerRadius={40} outerRadius={80} fill="#8884d8" paddingAngle={5} dataKey="value" label={{ fontSize: '10px' }}> {/* Tamanho do raio e da fonte do label ajustados */}
                           {dadosPizza.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={CORES[index % CORES.length]} />
                           ))}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                        <Legend verticalAlign="bottom" height={36}/>
+                        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px' }} /> {/* Tamanho da fonte da legenda ajustado */}
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
                 )}
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-purple-800 mb-6 text-center">💜 Cuidados Paliativos</h3>
-                <div className="h-80 w-full">
+              {/* Gráfico de Cuidados Paliativos */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="text-base md:text-lg font-bold text-purple-800 mb-4 text-center">💜 Cuidados Paliativos</h3>
+                <div className="h-64 md:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dados}>
                       <defs>
@@ -312,26 +334,27 @@ export default function DashboardUnificado() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
+                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                       <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend />
-                      <Area type="monotone" dataKey="cuidados_paliativos" name="Cuidados Paliativos" stroke="#a855f7" strokeWidth={3} fillOpacity={1} fill="url(#corPaliativo)" />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
+                      <Area type="monotone" dataKey="cuidados_paliativos" name="Cuidados Paliativos" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#corPaliativo)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-red-800 mb-6 text-center">💊 Uso de Antibióticos (ATB)</h3>
-                <div className="h-80 w-full">
+              {/* Gráfico de Uso de Antibióticos (ATB) */}
+              <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="text-base md:text-lg font-bold text-red-800 mb-4 text-center">💊 Uso de Antibióticos (ATB)</h3>
+                <div className="h-64 md:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dados}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
+                      <XAxis dataKey="mes" stroke="#64748b" tick={{ fontSize: 10 }} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                       <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '12px' }} />
                       <Bar dataKey="uso_atb" name="Pacientes com ATB" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

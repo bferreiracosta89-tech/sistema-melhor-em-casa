@@ -79,8 +79,10 @@ export default function FormularioManual() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Digitação Manual de Indicadores</h2>
+    <div className="p-4 md:p-6 max-w-4xl mx-auto"> {/* Padding ajustado */}
+      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 md:mb-8 border-b pb-3 md:pb-4"> {/* Tamanho do título ajustado */}
+        Digitação Manual de Indicadores
+      </h2>
 
       {mensagem && (
         <div className={`p-4 mb-6 rounded-md font-semibold ${mensagem.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -88,38 +90,38 @@ export default function FormularioManual() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-md border border-gray-200">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8 bg-white p-5 md:p-8 rounded-lg shadow-md border border-gray-200"> {/* Espaçamento e padding ajustados */}
 
         <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
           <label className="block text-sm font-bold text-blue-800 mb-2">Mês de Referência</label>
-          <select name="mes" value={formData.mes} onChange={handleChange} className="w-full md:w-1/3 p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700">
+          <select name="mes" value={formData.mes} onChange={handleChange} className="w-full sm:w-2/3 md:w-1/3 p-2.5 md:p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700 text-sm md:text-base"> {/* Largura e padding ajustados */}
             {['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'].map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8"> {/* Espaçamento ajustado */}
           {/* Coluna 1: Fluxo Geral */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Fluxo de Pacientes</h3>
 
             <div>
               <label className="block text-sm font-bold text-purple-700 mb-1">Pacientes Ativos no Mês</label>
-              <input type="number" name="pacientes_ativos" value={formData.pacientes_ativos} onChange={handleChange} className="w-full p-2 border border-purple-300 bg-purple-50 rounded-md focus:ring-purple-500" placeholder="Ex: 150" />
+              <input type="number" name="pacientes_ativos" value={formData.pacientes_ativos} onChange={handleChange} className="w-full p-2.5 border border-purple-300 bg-purple-50 rounded-md focus:ring-purple-500 text-sm md:text-base" placeholder="Ex: 150" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Admissões no mês</label>
-              <input type="number" name="admissoes" value={formData.admissoes} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 120" />
+              <input type="number" name="admissoes" value={formData.admissoes} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 120" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Altas Clínicas</label>
-              <input type="number" name="altas_clinicas" value={formData.altas_clinicas} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 95" />
+              <input type="number" name="altas_clinicas" value={formData.altas_clinicas} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 95" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Óbitos</label>
-              <input type="number" name="obitos" value={formData.obitos} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 5" />
+              <input type="number" name="obitos" value={formData.obitos} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 5" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
           </div>
 
@@ -128,51 +130,51 @@ export default function FormularioManual() {
             <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Cuidados Especiais</h3>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Feridas Ativas (Total)</label>
-              <input type="number" name="feridas_ativas" value={formData.feridas_ativas} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 15" />
+              <input type="number" name="feridas_ativas" value={formData.feridas_ativas} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 15" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"> {/* Grid responsivo ajustado */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Pacientes em VM</label>
-                <input type="number" name="pacientes_vm" value={formData.pacientes_vm} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 8" />
+                <input type="number" name="pacientes_vm" value={formData.pacientes_vm} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 8" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Pacientes com TQT</label>
-                <input type="number" name="pacientes_tqt" value={formData.pacientes_tqt} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 4" />
+                <input type="number" name="pacientes_tqt" value={formData.pacientes_tqt} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 4" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Pacientes com GTT</label>
-                <input type="number" name="pacientes_gtt" value={formData.pacientes_gtt} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 5" />
+                <input type="number" name="pacientes_gtt" value={formData.pacientes_gtt} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 5" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">Pacientes com SNE</label>
-                <input type="number" name="pacientes_sne" value={formData.pacientes_sne} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 7" />
+                <input type="number" name="pacientes_sne" value={formData.pacientes_sne} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 7" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Pacientes em Cuidados Paliativos</label>
-              <input type="number" name="cuidados_paliativos" value={formData.cuidados_paliativos} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded-md" placeholder="Ex: 12" />
+              <input type="number" name="cuidados_paliativos" value={formData.cuidados_paliativos} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-md text-sm md:text-base" placeholder="Ex: 12" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
             <div>
               <label className="block text-sm font-bold text-red-600 mb-1">Uso de Antibióticos (ATB)</label>
-              <input type="number" name="uso_atb" value={formData.uso_atb} onChange={handleChange} className="w-full p-2 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500 bg-red-50" placeholder="Ex: 25" />
+              <input type="number" name="uso_atb" value={formData.uso_atb} onChange={handleChange} className="w-full p-2.5 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500 bg-red-50 text-sm md:text-base" placeholder="Ex: 25" /> {/* Padding e tamanho da fonte ajustados */}
             </div>
           </div>
 
           {/* Bloco de Complexidade */}
           <div className="col-span-full mt-4">
             <h4 className="text-md font-semibold text-slate-700 mb-3 border-b pb-2">Complexidade de Pacientes</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"> {/* Grid responsivo ajustado */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Pacientes AD1</label>
-                <input type="number" name="ad1" value={formData.ad1} onChange={handleChange} min="0" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: 12" />
+                <input type="number" name="ad1" value={formData.ad1} onChange={handleChange} min="0" className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm md:text-base" placeholder="Ex: 12" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Pacientes AD2</label>
-                <input type="number" name="ad2" value={formData.ad2} onChange={handleChange} min="0" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: 8" />
+                <input type="number" name="ad2" value={formData.ad2} onChange={handleChange} min="0" className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm md:text-base" placeholder="Ex: 8" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Pacientes AD3</label>
-                <input type="number" name="ad3" value={formData.ad3} onChange={handleChange} min="0" className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: 4" />
+                <input type="number" name="ad3" value={formData.ad3} onChange={handleChange} min="0" className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm md:text-base" placeholder="Ex: 4" /> {/* Padding e tamanho da fonte ajustados */}
               </div>
             </div>
           </div>
@@ -180,7 +182,7 @@ export default function FormularioManual() {
         </div>
 
         <div className="pt-6 border-t">
-          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 transition duration-300 shadow-lg">
+          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2.5 md:py-3 px-4 rounded-md hover:bg-blue-700 transition duration-300 shadow-lg text-base md:text-lg"> {/* Padding e tamanho da fonte ajustados */}
             💾 Salvar Todos os Dados
           </button>
         </div>

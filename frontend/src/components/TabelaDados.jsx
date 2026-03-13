@@ -3,20 +3,16 @@ import { Trash2, Edit, FileSpreadsheet, X, Save, Download } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function TabelaDados() {
-  // 1. TODOS OS ESTADOS NO TOPO (Regra do React)
   const [dados, setDados] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [itemEditando, setItemEditando] = useState(null);
-  const [exportando, setExportando] = useState(false); // <-- Movido para cá!
+  const [exportando, setExportando] = useState(false);
 
-  // 2. BUSCAR DADOS
   const buscarDados = async () => {
     try {
       const token = localStorage.getItem('token_melhor_em_casa');
       const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!resposta.ok) throw new Error("Acesso negado");
@@ -32,16 +28,13 @@ export default function TabelaDados() {
 
   useEffect(() => { buscarDados(); }, []);
 
-  // 3. EXCLUIR DADOS
   const excluirRegistro = async (id, mes) => {
     if (window.confirm(`Excluir permanentemente os dados de ${mes}?`)) {
       try {
         const token = localStorage.getItem('token_melhor_em_casa');
         const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/indicadores/${id}`, { 
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (resposta.ok) {
@@ -56,7 +49,6 @@ export default function TabelaDados() {
     }
   };
 
-  // 4. EDITAR DADOS
   const salvarEdicao = async (e) => {
     e.preventDefault();
     const toastId = toast.loading('Salvando todos os dados...');
@@ -106,7 +98,6 @@ export default function TabelaDados() {
     }
   };
 
-  // 5. EXPORTAR PARA EXCEL (Movido para cima)
   const exportarParaExcel = async () => {
     setExportando(true);
     try {
@@ -139,34 +130,38 @@ export default function TabelaDados() {
   const InputEdicao = ({ label, campo }) => (
     <div>
       <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
-      <input type="number" className="w-full border border-gray-300 rounded p-2 text-sm"
+      <input type="number" className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
         value={itemEditando[campo] || 0}
         onChange={e => setItemEditando({...itemEditando, [campo]: e.target.value})}
       />
     </div>
   );
 
-  // 6. O RETURN DE CARREGAMENTO DEVE FICAR AQUI EMBAIXO
-  if (carregando) return <div className="p-8 text-center">Carregando...</div>;
+  if (carregando) return <div className="p-8 text-center text-gray-500">Carregando dados...</div>;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen relative">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen relative">
       <Toaster position="top-right" />
 
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 flex items-center gap-3">
-          <div className="bg-blue-100 p-3 rounded-full text-blue-700">
-            <FileSpreadsheet size={24} />
+
+        {/* Cabeçalho Responsivo */}
+        <div className="p-4 md:p-6 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="bg-blue-100 p-2 md:p-3 rounded-full text-blue-700 shrink-0">
+              <FileSpreadsheet size={24} />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">Banco de Dados</h2>
+              <p className="text-gray-500 text-xs md:text-sm">Visualize e edite todos os indicadores</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-800">Banco de Dados Completo</h2>
-            <p className="text-gray-500 text-sm">Visualize e edite todos os indicadores clínicos e gerenciais</p>
-          </div>
-          <div>
+
+          <div className="w-full md:w-auto">
             <button
               onClick={exportarParaExcel}
               disabled={exportando}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white transition-colors shadow-sm ${
+              className={`w-full md:w-auto flex justify-center items-center gap-2 px-4 py-2 rounded-lg font-bold text-white transition-colors shadow-sm ${
                 exportando ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
               }`}
             >
@@ -176,11 +171,12 @@ export default function TabelaDados() {
           </div>
         </div>
 
+        {/* Tabela com Scroll Horizontal */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="bg-gray-800 text-white text-xs uppercase tracking-wider">
-                <th className="p-3 font-semibold sticky left-0 bg-gray-900 z-10">Mês</th>
+                <th className="p-3 font-semibold sticky left-0 bg-gray-900 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">Mês</th>
                 <th className="p-3 font-semibold text-center bg-gray-700">Ações</th>
                 <th className="p-3 font-semibold text-center">Admissões</th>
                 <th className="p-3 font-semibold text-center">Altas</th>
@@ -201,7 +197,7 @@ export default function TabelaDados() {
             <tbody className="divide-y divide-gray-200 text-sm">
               {dados.map((linha) => (
                 <tr key={linha.id} className="hover:bg-blue-50">
-                  <td className="p-3 font-bold text-gray-800 sticky left-0 bg-white border-r">{linha.mes_ano || linha.mes}</td>
+                  <td className="p-3 font-bold text-gray-800 sticky left-0 bg-white border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{linha.mes_ano || linha.mes}</td>
                   <td className="p-3 text-center flex justify-center gap-2 border-r">
                     <button onClick={() => setItemEditando(linha)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded"><Edit size={16} /></button>
                     <button onClick={() => excluirRegistro(linha.id, linha.mes_ano || linha.mes)} className="p-1.5 text-red-500 hover:bg-red-100 rounded"><Trash2 size={16} /></button>
@@ -227,18 +223,22 @@ export default function TabelaDados() {
         </div>
       </div>
 
+      {/* MODAL DE EDIÇÃO RESPONSIVO */}
       {itemEditando && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-2 md:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]">
+
             <div className="p-4 bg-gray-800 text-white flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-lg">Editar Dados Completos: {itemEditando.mes_ano || itemEditando.mes}</h3>
-              <button onClick={() => setItemEditando(null)} className="text-gray-300 hover:text-white"><X size={24} /></button>
+              <h3 className="font-bold text-base md:text-lg truncate pr-4">Editar: {itemEditando.mes_ano || itemEditando.mes}</h3>
+              <button onClick={() => setItemEditando(null)} className="text-gray-300 hover:text-white shrink-0"><X size={24} /></button>
             </div>
 
-            <form onSubmit={salvarEdicao} className="p-6 overflow-y-auto space-y-6">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h4 className="font-bold text-gray-700 mb-3 border-b pb-2">1. Fluxo de Pacientes</h4>
-                <div className="grid grid-cols-4 gap-4">
+            <form onSubmit={salvarEdicao} className="p-4 md:p-6 overflow-y-auto space-y-4 md:space-y-6">
+
+              <div className="bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
+                <h4 className="font-bold text-gray-700 mb-3 border-b pb-2 text-sm md:text-base">1. Fluxo de Pacientes</h4>
+                {/* Grid Responsivo: 1 coluna no celular, 2 no tablet, 4 no PC */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                   <InputEdicao label="Admissões" campo="admissoes" />
                   <InputEdicao label="Altas" campo="altas_clinicas" />
                   <InputEdicao label="Óbitos" campo="obitos" />
@@ -246,18 +246,18 @@ export default function TabelaDados() {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h4 className="font-bold text-yellow-800 mb-3 border-b border-yellow-200 pb-2">2. Perfil Clínico</h4>
-                <div className="grid grid-cols-3 gap-4">
+              <div className="bg-yellow-50 p-3 md:p-4 rounded-lg border border-yellow-200">
+                <h4 className="font-bold text-yellow-800 mb-3 border-b border-yellow-200 pb-2 text-sm md:text-base">2. Perfil Clínico</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                   <InputEdicao label="Feridas Ativas" campo="feridas_ativas" />
                   <InputEdicao label="Uso de ATB" campo="uso_atb" />
                   <InputEdicao label="Cuidados Paliativos" campo="cuidados_paliativos" />
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2">3. Dispositivos</h4>
-                <div className="grid grid-cols-4 gap-4">
+              <div className="bg-blue-50 p-3 md:p-4 rounded-lg border border-blue-200">
+                <h4 className="font-bold text-blue-800 mb-3 border-b border-blue-200 pb-2 text-sm md:text-base">3. Dispositivos</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                   <InputEdicao label="Ventilação (VM)" campo="pacientes_vm" />
                   <InputEdicao label="Traqueostomia (TQT)" campo="pacientes_tqt" />
                   <InputEdicao label="Gastrostomia (GTT)" campo="pacientes_gtt" />
@@ -265,21 +265,22 @@ export default function TabelaDados() {
                 </div>
               </div>
 
-              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                <h4 className="font-bold text-purple-800 mb-3 border-b border-purple-200 pb-2">4. Complexidade (AD)</h4>
-                <div className="grid grid-cols-3 gap-4">
+              <div className="bg-purple-50 p-3 md:p-4 rounded-lg border border-purple-200">
+                <h4 className="font-bold text-purple-800 mb-3 border-b border-purple-200 pb-2 text-sm md:text-base">4. Complexidade (AD)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                   <InputEdicao label="AD1" campo="ad1" />
                   <InputEdicao label="AD2" campo="ad2" />
                   <InputEdicao label="AD3" campo="ad3" />
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-white py-2 border-t mt-4">
-                <button type="button" onClick={() => setItemEditando(null)} className="px-6 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">
+              {/* Botões empilhados no celular, lado a lado no PC */}
+              <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-3 sticky bottom-0 bg-white py-3 border-t mt-4">
+                <button type="button" onClick={() => setItemEditando(null)} className="w-full sm:w-auto px-6 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium border border-gray-300 sm:border-transparent">
                   Cancelar
                 </button>
-                <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-bold shadow-md">
-                  <Save size={20} /> Salvar Todos os Dados
+                <button type="submit" className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex justify-center items-center gap-2 font-bold shadow-md">
+                  <Save size={20} /> Salvar Dados
                 </button>
               </div>
             </form>

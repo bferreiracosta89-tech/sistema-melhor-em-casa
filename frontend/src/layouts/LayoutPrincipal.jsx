@@ -1,16 +1,17 @@
-import React from 'react';
-import { LayoutDashboard, Upload, FileText, LogOut, User, Activity, Edit, UserPlus, PieChart } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, Upload, FileText, LogOut, User, Activity, Edit, UserPlus, PieChart, Menu, X } from 'lucide-react';
 import InfoUsuario from '../components/InfoUsuario';
 
 export default function LayoutPrincipal({ children, abaAtiva, setAbaAtiva }) {
+  // NOVO ESTADO: Controla se o menu do celular está aberto ou fechado
+  const [menuAberto, setMenuAberto] = useState(false);
 
   // 1. Descobre qual é o perfil do usuário lendo o Token
-  let perfilUsuario = 'usuario'; // Padrão é usuário comum
+  let perfilUsuario = 'usuario';
   const token = localStorage.getItem('token_melhor_em_casa');
 
   if (token) {
     try {
-      // Decodifica a parte do meio do token (payload) para ler o perfil
       const payload = JSON.parse(atob(token.split('.')[1]));
       perfilUsuario = payload.perfil || 'usuario';
     } catch (e) {
@@ -18,49 +19,64 @@ export default function LayoutPrincipal({ children, abaAtiva, setAbaAtiva }) {
     }
   }
 
-  // 2. Definição dos itens do menu lateral com a regra "adminOnly"
+  // 2. Definição dos itens do menu lateral
   const menuItems = [
     { id: 'dashboard', label: 'Visão Geral', icon: LayoutDashboard, adminOnly: false },
-    {id: 'tabela_dados', label: 'Tabela de Dados', icon: FileText, adminOnly: false },
+    { id: 'tabela_dados', label: 'Tabela de Dados', icon: FileText, adminOnly: false },
     { id: 'relatorios', label: 'Relatórios IA', icon: FileText, adminOnly: false },
     { id: 'digitacao', label: 'Digitação', icon: Edit, adminOnly: true },
     { id: 'upload', label: 'Importar Planilha', icon: Upload, adminOnly: true },
     { id: 'usuarios', label: 'Equipe / Usuários', icon: UserPlus, adminOnly: true }, 
   ];
 
-  // 3. Filtra o menu: se não for admin, esconde os botões restritos
+  // 3. Filtra o menu
   const menuFiltrado = menuItems.filter(item => {
-    if (item.adminOnly && perfilUsuario !== 'admin') {
-      return false; // Esconde o botão
-    }
-    return true; // Mostra o botão
+    if (item.adminOnly && perfilUsuario !== 'admin') return false;
+    return true;
   });
 
   const fazerLogout = () => {
     localStorage.removeItem('token_melhor_em_casa');
-    window.location.reload(); // Recarrega a página para voltar à tela de login
+    window.location.reload();
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
+    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
 
-      {/* MENU LATERAL (SIDEBAR) */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm z-10 print:hidden">
-        {/* Espaço para a Logo do Hospital */}
-        <div className="p-6 border-b border-gray-800 flex items-center gap-3">
-          <div className="bg-white p-2 rounded-lg">
-            <img 
-              src="/logo-melhor-em-casa.png" 
-              alt="Logo Melhor em Casa" 
-              className="w-12 h-12 object-contain" 
-            />
+      {/* FUNDO ESCURO NO CELULAR (Quando o menu abre) */}
+      {menuAberto && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden transition-opacity"
+          onClick={() => setMenuAberto(false)}
+        />
+      )}
+
+      {/* MENU LATERAL (SIDEBAR) - Agora Responsivo */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col shadow-2xl md:shadow-sm print:hidden
+        transform transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 
+        ${menuAberto ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        {/* Cabeçalho do Menu */}
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-2 rounded-lg shadow-sm border border-slate-100">
+              <img src="/logo-melhor-em-casa.png" alt="Logo" className="w-8 h-8 object-contain" />
+            </div>
+            <h1 className="text-xs font-bold text-slate-800 tracking-wide leading-tight">Programa<br/>Melhor em Casa</h1>
           </div>
-          <div>
-            <h1 className="text-xs font-bold text-Black tracking-wide">Programa Melhor em Casa</h1>
-          </div>
+
+          {/* Botão de fechar (Só aparece no celular) */}
+          <button 
+            onClick={() => setMenuAberto(false)}
+            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg md:hidden"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Navegação - AGORA USANDO O MENU FILTRADO */}
+        {/* Navegação */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuFiltrado.map((item) => {
             const Icon = item.icon;
@@ -69,7 +85,10 @@ export default function LayoutPrincipal({ children, abaAtiva, setAbaAtiva }) {
             return (
               <button
                 key={item.id}
-                onClick={() => setAbaAtiva(item.id)}
+                onClick={() => {
+                  setAbaAtiva(item.id);
+                  setMenuAberto(false); // Fecha o menu ao clicar (útil no celular)
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   ativo 
                     ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm border border-blue-100' 
@@ -96,27 +115,38 @@ export default function LayoutPrincipal({ children, abaAtiva, setAbaAtiva }) {
       </aside>
 
       {/* ÁREA PRINCIPAL (DIREITA) */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-w-0 relative">
 
         {/* Cabeçalho (Header) */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-8 sticky top-0 z-20 print:hidden">
-          <h2 className="text-2xl font-bold text-slate-800">
-            {menuItems.find(m => m.id === abaAtiva)?.label || 'Dashboard'}
-          </h2>
+        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 print:hidden">
+
+          <div className="flex items-center gap-3">
+            {/* Botão Hambúrguer (Só aparece no celular) */}
+            <button 
+              onClick={() => setMenuAberto(true)}
+              className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg md:hidden"
+            >
+              <Menu size={24} />
+            </button>
+
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800 truncate">
+              {menuItems.find(m => m.id === abaAtiva)?.label || 'Dashboard'}
+            </h2>
+          </div>
 
           {/* Perfil do Usuário */}
-          <div className="flex items-center gap-4 ">
+          <div className="flex items-center gap-4">
             <div className="mt-6 text-right hidden md:block">
               <InfoUsuario />
             </div>
-            <div className="bg-blue-100 p-3 rounded-full border border-blue-200">
+            <div className="bg-blue-100 p-2 md:p-3 rounded-full border border-blue-200 shrink-0">
               <User className="text-blue-700" size={20} />
             </div>
           </div>
         </header>
 
-        {/* Conteúdo Dinâmico (Aqui entram os gráficos, upload ou relatórios) */}
-        <div className="flex-1 overflow-auto p-8">
+        {/* Conteúdo Dinâmico */}
+        <div className="flex-1 overflow-auto p-4 md:p-8">
           <div className="mx-auto max-w-7xl">
             {children}
           </div>
